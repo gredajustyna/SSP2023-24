@@ -1,4 +1,8 @@
 # SSP2023-24
+Topology: 
+<p align="center">
+  <img width="406" alt="topology-SSP" src="https://github.com/gredajustyna/SSP2023-24/assets/56201394/6fbf9365-d348-4ea6-a5ea-4ed2d00e31b6">
+</p>
 
 Bibliography:
 
