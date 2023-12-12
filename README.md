@@ -6,7 +6,7 @@
 
 ### Chosen traffic generator: D-ITG 
 
-[https://traffic.comics.unina.it/software/ITG/download.php](https://traffic.comics.unina.it/software/ITG/documentation.php)
+https://traffic.comics.unina.it/software/ITG/documentation.php
 
 #### Example of D-ITG configuration and usage:
 
