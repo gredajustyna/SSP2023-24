@@ -27,7 +27,7 @@ https://traffic.comics.unina.it/software/ITG/documentation.php
 1. cd /D-ITG-2.8.1-r1023/bin/
 2. ./ITGSend -a 10.0.0.1 -l sender.log -x receiver.log
 3. ./ITGDec receiver.log
-4. ./ITGDec receiver.log
+4. ./ITGDec sender.log
 
 
 ### How to use startup script ###
