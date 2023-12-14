@@ -41,6 +41,7 @@ class MyTopo(Topo):
         print()
 
 def topo():
+    topos = { 'mytopo': (lambda: MyTopo())}
     net = Mininet(topo=MyTopo())
     net.addController()
     sources = [net.hosts[0]]
