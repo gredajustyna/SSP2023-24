@@ -36,6 +36,74 @@ https://traffic.comics.unina.it/software/ITG/documentation.php
 3. sudo python net.py
 
 There might be a need to update python / install additional libraries (mininet).
+
+### Pseudocode:
+#### MANAGE-FLOWS(networkGraph, flowDB, networkMonitor)
+```
+for each flow in flowDB do
+  ADD-FLOW-DATA(networkMonitor, flow.id, flow.history)
+  CLASSIFY(flow.history)
+end for
+SEIZE-BW(networkGraph, flowDB)
+RETURN-BW(networkGraph, flowDB)
+SHARE-AVAILABLE-BW(networkGraph, flowDB)
+for each flow in flowDB do
+  COMMIT-DROP-RATE(flow)
+end for
+```
+
+#### SEIZE-BW(networkGraph, flowDB)
+```
+for each flow in flowDB do
+  lowerBound ← CALC-THRESHOLD(flow.tracking, flow.rate,
+flow.history)
+  if flow.class = DECREASE and flow.rate < lowerBound then
+    decrease ← CALC-OPTIMAL-DECREASE(flow.tracking, flow.rate, flow.history)
+    flow.tracking ← flow.tracking - decrease
+    ADD-TO-AVAILABLE-POOLS(networkGraph, flow.route, decrease)
+  end if
+end for
+```
+
+#### RETURN-BW(networkGraph, flowDB)
+```
+for each flow in flowDB with flow not flow.flagged do
+  if INSIDE-GROWTH-MARGIN(flow.rate, flow.margin) then
+    available ← BW-ON-PATH(networkGraph, flow.route)
+    optimal ← CALC-OPTIMAL-INCREASE(flow.tracking, flow.rate, flow.history)
+    returned ← MIN(available, optimal)
+    flow.tracking ← flow.tracking + returned
+    CLAIM-BW(networkGraph, flow.route, returned)
+    remaining ← optimal - returned
+    if remaining > 0 then
+      other ← GET-LOWEST-PRIORITY(flowDB, flow)
+      while remaining > 0 do
+        returned ← returned + TAKE-BW(networkGraph, flowDB, other, remaining)
+        flow.tracking ← flow.tracking + returned
+        remaining ← remaining − returned
+        other ← GET-NEXT-LOWEST(flowDB, other, flow)
+      end while
+    end if
+    flow.flagged ← GROWING
+  end if
+end for
+```
+
+#### SHARE-BW(networkGraph, flowDB)
+```
+for flow in flowDB from flow.priority = HIGHEST to
+flow.priority = LOWEST with flow not flow.flagged do
+  lowerBound ← flow.reserved − CALC-NOMINALWINDOW(flow.rate, flow.history)/2
+  if flow.tracking ≥ lowerBound then
+    available ← BW-ON-PATH(networkGraph, flow.route)
+    optimal ← CALC-OPTIMALINCREASE(flow.tracking, flow.rate, flow.history)
+    borrowed ← MIN(available, optimal)
+    flow.tracking ← flow.tracking + borrowed
+    CLAIM-BW(networkGraph, flow.route)
+  end if
+end for
+```
+
 ### Bibliography:
 
 1. Boley, Josh, Jung, Eun-Sung, Kettimuthu, R., Rao, Nageswara S., and Foster, I. Adaptive QoS for Data Transfers using Software-Defined Networking. United States: N. p., 2016. Web. doi:10.1109/ANTS.2016.7947874
