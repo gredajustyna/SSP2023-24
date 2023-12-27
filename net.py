@@ -1,6 +1,8 @@
 from mininet.topo import Topo, MinimalTopo
 from mininet.net import Mininet
 from mininet.cli import CLI
+import random
+import string
 
 class MyTopo(Topo):
     def __init__ (self):
@@ -44,19 +46,27 @@ def topo():
     topos = { 'mytopo': (lambda: MyTopo())}
     net = Mininet(topo=MyTopo())
     net.addController()
-    sources = [net.hosts[0]]
-    dests = [net.hosts[5]]
+    hosts = net.hosts
     net.start()
 
-    for d in dests:
-        d.cmd("cd ../")
-        d.cmd("cd D-ITG-2.8.1-r1023/bin")
-        print(d.cmd("./ITGRecv -l recv.log &"))
+    for i in range(5):
+        source = random.choice(hosts)
+        dest = random.choice(hosts)
+        while dest == source:
+            dest = random.choice(hosts)
 
-    for s in sources:
-        s.cmd("cd ../")
-        s.cmd("cd D-ITG-2.8.1-r1023/bin")
-        print(s.cmd("./ITGSend -a 10.0.0.6 -l send.log &"))
+        source.cmd("cd ../")
+        source.cmd("cd D-ITG-2.8.1-r1023/bin")
+        dest.cmd("cd ../")
+        dest.cmd("cd D-ITG-2.8.1-r1023/bin")
+
+        send_log = "send_{}_{}.log".format(source, dest).replace(" ", "_")
+        recv_log = "recv_{}_{}.log".format(source, dest).replace(" ", "_")
+
+        print("Sending traffic from {} to {}".format(source, dest))
+        source.cmd("./ITGSend -a {} -l {} &".format(dest.IP(), send_log))
+        dest.cmd("./ITGRecv -l {} &".format(recv_log))
+
 
     CLI( net )
     net.stop()
