@@ -1,7 +1,9 @@
 package pl.edu.agh.kt;
 
 import org.projectfloodlight.openflow.protocol.OFMessage;
+import org.projectfloodlight.openflow.types.ArpOpcode;
 import org.projectfloodlight.openflow.types.EthType;
+import org.projectfloodlight.openflow.types.IPv4Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,9 +43,9 @@ public class PacketExtractor {
 
 	public void extractEth() {
 		eth = IFloodlightProviderService.bcStore.get(cntx, IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
-		logger.info("Frame: src mac {}", eth.getSourceMACAddress());
-		logger.info("Frame: dst mac {}", eth.getDestinationMACAddress());
-		logger.info("Frame: ether_type {}", eth.getEtherType());
+		//logger.info("Frame: src mac {}", eth.getSourceMACAddress());
+		//logger.info("Frame: dst mac {}", eth.getDestinationMACAddress());
+		//logger.info("Frame: ether_type {}", eth.getEtherType());
 
 		if (eth.getEtherType() == EthType.ARP) {
 			arp = (ARP) eth.getPayload();
@@ -60,8 +62,15 @@ public class PacketExtractor {
 		logger.info("ARP extractor");
 	}
 
-	public void extractIp() {
-		logger.info("IP extractor");
+	public IPv4Address extractIp() {
+		if (eth.getEtherType() == EthType.ARP) {
+			arp = (ARP) eth.getPayload();
+			return arp.getTargetProtocolAddress();
+		}
+		if (eth.getEtherType() == EthType.IPv4) {
+			ipv4 = (IPv4) eth.getPayload();
+			return ipv4.getDestinationAddress();
+		}
+		return null;
 	}
-
 }

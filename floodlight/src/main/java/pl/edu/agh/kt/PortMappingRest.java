@@ -1,6 +1,10 @@
 package pl.edu.agh.kt;
 
+import pl.edu.agh.kt.IpToPort;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+
 import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.ServerResource;
@@ -17,20 +21,17 @@ public class PortMappingRest extends ServerResource {
 	
 	@Get("json")
 	public String handleGet() throws JsonProcessingException {
-		log.info("handleGet");
-		return serialize(new Timeout(Flows.getIdleTimeout(),
-				Flows.getHardTimeout()));
+        return null;
 	}
 
 	@Post("json")
 	public String handlePost(String text) throws JsonProcessingException,
 			IOException {
-		log.info("handlePost");
-		Timeout timeout = new Timeout();
-		timeout = deserialize(text, Timeout.class);
-		Flows.setIdleTimeout(timeout.getIdleTimeout());
-		Flows.setHardTimeout(timeout.getHardTimeout());
-		return serialize(timeout);
+		log.info("CINUS:: handlePost");
+		IpToPort[] ipToPort = deserialize(text);
+        List<IpToPort> ipToPortList = Arrays.asList(ipToPort);
+        SdnLabListener.updateIpToPortMapping(ipToPortList);
+		return serialize(ipToPortList);
 	}
 
 	static {
@@ -38,12 +39,12 @@ public class PortMappingRest extends ServerResource {
 		mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 	}
 
-	public static String serialize(Timeout t) throws JsonProcessingException {
+	public static String serialize(List<IpToPort> t) throws JsonProcessingException {
 		return mapper.writeValueAsString(t);
 	}
 
-	public static Timeout deserialize(String text, Class<Timeout> clazz)
+	public static IpToPort[] deserialize(String text)
 			throws IOException {
-		return mapper.readValue(text, clazz);
+		return mapper.readValue(text, IpToPort[].class);
 	}
 }

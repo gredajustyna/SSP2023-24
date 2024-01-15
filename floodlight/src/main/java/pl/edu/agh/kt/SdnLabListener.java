@@ -1,24 +1,33 @@
 package pl.edu.agh.kt;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFType;
+import org.projectfloodlight.openflow.types.DatapathId;
+import org.projectfloodlight.openflow.types.IPAddress;
+import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.OFPort;
+import org.projectfloodlight.openflow.types.U64;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
 import net.floodlightcontroller.core.IOFSwitch;
+import net.floodlightcontroller.core.internal.IOFSwitchService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
-
+import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.restserver.IRestApiService;
 import net.floodlightcontroller.routing.IRoutingService;
+import net.floodlightcontroller.routing.Route;
 import net.floodlightcontroller.topology.ITopologyService;
 
 import java.util.ArrayList;
@@ -36,6 +45,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	protected ITopologyService topologyService;
 	protected IRoutingService routingService;
 	protected static Routing routing;
+	protected IOFSwitchService switchService;
+	protected static List<DatapathId> swList = new ArrayList<DatapathId>();
+	private static HashMap<String, IpToPort> ipToPortMap = new HashMap<>();
 
 	@Override
 	public String getName() {
@@ -58,19 +70,24 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	public net.floodlightcontroller.core.IListener.Command receive(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
 
-		// logger.info("************* NEW PACKET IN *************");
-		// PacketExtractor extractor = new PacketExtractor();
-		// extractor.packetExtract(cntx);
-
-		// TODO LAB 6
 		OFPacketIn pin = (OFPacketIn) msg;
-		OFPort outPort = OFPort.of(0);
-		if (pin.getInPort() == OFPort.of(1)) {
-			outPort = OFPort.of(2);
-		} else
-			outPort = OFPort.of(1);
-		// Flows.simpleAdd(sw, pin, cntx, outPort);
-		// StatisticsCollector.getInstance(sw);
+		PacketExtractor packetExtractor = new PacketExtractor(cntx, msg);
+		packetExtractor.packetExtract(cntx);
+		IPv4Address destIp = packetExtractor.extractIp();
+		if (destIp != null){
+			logger.debug("CINUS:: got destIp: {}", destIp.toString());
+			if (ipToPortMap.containsKey(destIp.toString())){
+				IpToPort ipToPort = ipToPortMap.get(destIp.toString());
+				logger.debug("CINUS:: resolved dest ip to port: {} on switch: {}", ipToPort.getPort(), ipToPort.getSw());
+				logger.debug("CINUS:: sw.getId(): {}", sw.getId());
+				Route route = routingService.getRoute(sw.getId(), pin.getInPort(), DatapathId.of(ipToPort.getSw()), OFPort.of(ipToPort.getPort()), U64.of(0));
+				if (route != null){
+					logger.debug("CINUS:: resolved route: {}", route.toString());
+					Flows.insertFlowsOnRoute(route, switchService, cntx);
+				}
+			}
+		}
+
 		return Command.STOP;
 	}
 
@@ -104,6 +121,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		restApiService = context.getServiceImpl(IRestApiService.class);
 		topologyService = context.getServiceImpl(ITopologyService.class);
 		routingService = context.getServiceImpl(IRoutingService.class);
+		switchService = context.getServiceImpl(IOFSwitchService.class);
 	}
 
 	public static Routing getRouting() {
@@ -118,7 +136,28 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		topologyService.addListener(new SdnLabTopologyListener());
 		routing = new Routing(routingService);
 		logger.info("******************* START **************************");
-
 	}
 
+	public static void updateSwList(DatapathId sw) {
+		swList.add(sw);
+		logger.debug("CINUS:: current state of swList: ");
+		for(DatapathId s: swList){
+			logger.debug("CINUS:: sw: {}", s.toString());
+		}
+	}
+
+	public static void deleteFromSwList(DatapathId sw) {
+		swList.remove(sw);
+		logger.debug("CINUS:: current state of swList: ");
+		for(DatapathId s: swList){
+			logger.debug("CINUS:: sw: {}", s.toString());
+		}
+	}
+
+	public static void updateIpToPortMapping(List<IpToPort> ipToPortList) {
+		for(IpToPort ipToPort: ipToPortList){
+			ipToPortMap.put(ipToPort.getIp(), ipToPort);
+			logger.debug("CINUS:: added to ipToPortMap: ip: {} sw: {}", ipToPort.getIp(), ipToPort.getSw());
+		}
+	}
 }

@@ -11,6 +11,7 @@ public class RestLab implements RestletRoutable {
 	public Restlet getRestlet(Context context) {
 		Router router = new Router(context);
 		router.attach("/timeout", LabRestServer.class);
+		router.attach("/iptoport", PortMappingRest.class);
 		return router;
 	}
 	
