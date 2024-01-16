@@ -1,0 +1,18 @@
+[
+    {
+        "srcIp": "10.0.0.3",
+        "destIp": "10.0.0.10",
+        "srcPort": 2003,
+        "destPort": 2010,
+        "duration": 10.0,
+        "minBw": 1.0
+    },
+    {
+        "srcIp": "10.0.0.2",
+        "destIp": "10.0.0.9",
+        "srcPort": 2002,
+        "destPort": 2009,
+        "duration": 10.0,
+        "minBw": 1.0
+    }
+]

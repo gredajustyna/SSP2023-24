@@ -4,6 +4,7 @@ from mininet.cli import CLI
 from mininet.node import RemoteController
 import random
 import string
+import time
 
 class MyTopo(Topo):
     def __init__ (self):
@@ -44,28 +45,38 @@ class MyTopo(Topo):
         print()
 
 def topo():
+    random.seed(0)
     topos = { 'mytopo': (lambda: MyTopo())}
     net = Mininet(topo=MyTopo(), controller=lambda name: RemoteController( name, ip='192.168.1.7', port=6653 ))
     hosts = net.hosts
+    left = range(0,5)
+    right = range(5,10)
+    print(hosts)
+
+    threads = []
+
     net.start()
+    for i in range(2):
+        source = random.choice(left)
+        dest = random.choice(right)
+        left.remove(source)
+        right.remove(dest)
+        source = hosts[source]
+        dest = hosts[dest]
 
-    for i in range(5):
-        source = random.choice(hosts)
-        dest = random.choice(hosts)
-        while dest == source:
-            dest = random.choice(hosts)
-
-        source.cmd("cd ../")
-        source.cmd("cd D-ITG-2.8.1-r1023/bin")
-        dest.cmd("cd ../")
-        dest.cmd("cd D-ITG-2.8.1-r1023/bin")
+        source.cmd("cd /home/floodlight/D-ITG-2.8.1-r1023/bin")
+        dest.cmd("cd /home/floodlight/D-ITG-2.8.1-r1023/bin")
 
         send_log = "send_{}_{}.log".format(source, dest).replace(" ", "_")
         recv_log = "recv_{}_{}.log".format(source, dest).replace(" ", "_")
 
+        send_dbg_log = "dbg_send_{}_{}.txt".format(source, dest).replace(" ", "_")
+        recv_dbg_log = "dbg_recv_{}_{}.log".format(source, dest).replace(" ", "_")
+
         print("Sending traffic from {} to {}".format(source, dest))
-        source.cmd("./ITGSend -a {} -l {} &".format(dest.IP(), send_log))
-        dest.cmd("./ITGRecv -l {} &".format(recv_log))
+        dest.cmd("./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log))
+        time.sleep(1)
+        source.cmd("./ITGSend -a {} -l {} >> {} 2>> {} &".format(dest.IP(), send_log, send_dbg_log, send_dbg_log))
 
 
     CLI( net )
