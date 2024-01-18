@@ -57,6 +57,21 @@ def topo():
     net.start()
     time.sleep(2)
         
+
+    for switch in net.switches:
+        switch.cmd(r"sudo ovs-vsctl -- set Port s1-eth1 qos=@newqos -- \
+--id=@newqos create QoS type=linux-htb other-config:max-rate=10000000 queues=0=@q0,1=@q1,2=@q2,3=@q3,4=@q4,5=@q5,6=@q6,7=@q7,8=@q8,9=@q9 -- \
+--id=@q0 create Queue other-config:min-rate=1000000 other-config:max-rate=1000000 -- \
+--id=@q1 create Queue other-config:min-rate=2000000 other-config:max-rate=2000000 -- \
+--id=@q2 create Queue other-config:min-rate=3000000 other-config:max-rate=3000000 -- \
+--id=@q3 create Queue other-config:min-rate=4000000 other-config:max-rate=4000000 -- \
+--id=@q4 create Queue other-config:min-rate=5000000 other-config:max-rate=5000000 -- \
+--id=@q5 create Queue other-config:min-rate=6000000 other-config:max-rate=6000000 -- \
+--id=@q6 create Queue other-config:min-rate=7000000 other-config:max-rate=7000000 -- \
+--id=@q7 create Queue other-config:min-rate=8000000 other-config:max-rate=8000000 -- \
+--id=@q8 create Queue other-config:min-rate=9000000 other-config:max-rate=9000000 -- \
+--id=@q9 create Queue other-config:min-rate=10000000 other-config:max-rate=10000000 ")
+
     for i in range(2):
         source = random.choice(left)
         dest = random.choice(right)
@@ -80,7 +95,6 @@ def topo():
         dest.cmd("./ITGRecv -l {} -rp {} -T UDP >> {} 2>> {} &".format(recv_log, dest_port, recv_dbg_log, recv_dbg_log))
         time.sleep(1)
         source.cmd("./ITGSend -a {} -l {} -sp {} -rp {} -T UDP >> {} 2>> {} &".format(dest.IP(), send_log, src_port, dest_port, send_dbg_log, send_dbg_log))
-
 
     CLI( net )
     net.stop()
