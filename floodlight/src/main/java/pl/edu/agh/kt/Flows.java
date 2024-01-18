@@ -197,7 +197,7 @@ public class Flows {
 		TransportPort srcPort = TransportPort.of(flow.geFlowData().getSrcPort());
 		TransportPort destPort = TransportPort.of(flow.geFlowData().getDestPort());
 		mb.setExact(MatchField.IP_PROTO, IpProtocol.UDP)
-				.setExact(MatchField.UDP_SRC, srcPort)
+				//.setExact(MatchField.UDP_SRC, srcPort)
 				.setExact(MatchField.UDP_DST, destPort);
 
 		Match m = mb.build();

@@ -23,6 +23,7 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.core.web.serializers.IPv4Serializer;
 import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.restserver.IRestApiService;
@@ -92,11 +93,13 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			for(FlowEntry flow: FlowsDb.getFlows()){
 				if (!flow.getIsPropagated()){
 					destIp = IPv4Address.of(flow.geFlowData().getDestIp());
+					IPv4Address srcIp = IPv4Address.of(flow.geFlowData().getSrcIp());
 					if (ipToPortMap.containsKey(destIp.toString())){
-						IpToPort ipToPort = ipToPortMap.get(destIp.toString());
-						logger.debug("SDN_PROJ:: resolved flow dest ip to port: {} on switch: {}", ipToPort.getPort(), ipToPort.getSw());
+						IpToPort ipToPortDest = ipToPortMap.get(destIp.toString());
+						IpToPort ipToPortSrc = ipToPortMap.get(srcIp.toString());
+						logger.debug("SDN_PROJ:: resolved flow dest ip to port: {} on switch: {}", ipToPortDest.getPort(), ipToPortDest.getSw());
 						logger.debug("SDN_PROJ:: sw.getId(): {}", sw.getId());
-						Route route = routingService.getRoute(sw.getId(), pin.getInPort(), DatapathId.of(ipToPort.getSw()), OFPort.of(ipToPort.getPort()), U64.of(0));
+						Route route = routingService.getRoute(DatapathId.of(ipToPortSrc.getSw()), OFPort.of(ipToPortSrc.getPort()), DatapathId.of(ipToPortDest.getSw()), OFPort.of(ipToPortDest.getPort()), U64.of(0));
 						if (route != null){
 							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.geFlowData().getId(), route.toString());
 							Flows.insertQoSFlowsOnRoute(route, switchService, cntx, flow);

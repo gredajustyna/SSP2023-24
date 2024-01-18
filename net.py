@@ -55,9 +55,7 @@ def topo():
 
     threads = []
     net.start()
-    time.sleep(2)
-        
-
+    
     for switch in net.switches:
         switch.cmd(r"sudo ovs-vsctl -- set Port s1-eth1 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb other-config:max-rate=10000000 queues=0=@q0,1=@q1,2=@q2,3=@q3,4=@q4,5=@q5,6=@q6,7=@q7,8=@q8,9=@q9 -- \
@@ -71,12 +69,13 @@ def topo():
 --id=@q7 create Queue other-config:min-rate=8000000 other-config:max-rate=8000000 -- \
 --id=@q8 create Queue other-config:min-rate=9000000 other-config:max-rate=9000000 -- \
 --id=@q9 create Queue other-config:min-rate=10000000 other-config:max-rate=10000000 ")
-
+        
+    time.sleep(2)
     for i in range(2):
         source = random.choice(left)
         dest = random.choice(right)
         src_port = 2000 + source + 1
-        dest_port = 2000 + dest + 1
+        dest_port = 8999
         left.remove(source)
         right.remove(dest)
         source = hosts[source]
@@ -92,9 +91,13 @@ def topo():
         recv_dbg_log = "dbg_recv_{}_{}.log".format(source, dest).replace(" ", "_")
 
         print("Sending traffic from {} to {}".format(source, dest))
-        dest.cmd("./ITGRecv -l {} -rp {} -T UDP >> {} 2>> {} &".format(recv_log, dest_port, recv_dbg_log, recv_dbg_log))
+        dest_cmd = "./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log)
+        src_cmd = "./ITGSend -T UDP -a {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), send_log, dest_port, send_dbg_log, send_dbg_log)
+        print(dest_cmd)
+        print(src_cmd)
+        dest.cmd(dest_cmd)
         time.sleep(1)
-        source.cmd("./ITGSend -a {} -l {} -sp {} -rp {} -T UDP >> {} 2>> {} &".format(dest.IP(), send_log, src_port, dest_port, send_dbg_log, send_dbg_log))
+        source.cmd(src_cmd)
 
     CLI( net )
     net.stop()
