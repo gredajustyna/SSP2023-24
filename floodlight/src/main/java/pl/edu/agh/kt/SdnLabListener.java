@@ -86,6 +86,26 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 					Flows.insertFlowsOnRoute(route, switchService, cntx);
 				}
 			}
+
+			// check if there's a flow in FlowDB that has not been propagated
+			// wrzucilem to tutaj zeby sie rozpropagowaly od razu jak poleci pierwszy ARP
+			for(FlowEntry flow: FlowsDb.getFlows()){
+				if (!flow.getIsPropagated()){
+					destIp = IPv4Address.of(flow.geFlowData().getDestIp());
+					if (ipToPortMap.containsKey(destIp.toString())){
+						IpToPort ipToPort = ipToPortMap.get(destIp.toString());
+						logger.debug("SDN_PROJ:: resolved flow dest ip to port: {} on switch: {}", ipToPort.getPort(), ipToPort.getSw());
+						logger.debug("SDN_PROJ:: sw.getId(): {}", sw.getId());
+						Route route = routingService.getRoute(sw.getId(), pin.getInPort(), DatapathId.of(ipToPort.getSw()), OFPort.of(ipToPort.getPort()), U64.of(0));
+						if (route != null){
+							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.geFlowData().getId(), route.toString());
+							Flows.insertQoSFlowsOnRoute(route, switchService, cntx, flow);
+							logger.debug("SDN_PROJ:: Propagated QoS flow with id: {}", flow.geFlowData().getId());
+							flow.setIsPropagated(true);
+						}
+					}
+				}
+			}
 		}
 
 		return Command.STOP;

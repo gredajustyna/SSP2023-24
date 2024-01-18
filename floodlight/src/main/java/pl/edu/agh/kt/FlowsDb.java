@@ -11,17 +11,23 @@ public class FlowsDb {
 
     private static ArrayList<FlowEntry> flows = new ArrayList<>();
 
-    public static void addFlowEntry(FlowEntry flowEntry){
-        flows.add(flowEntry);
+    public static void addFlowEntry(FlowData flowData){
+        flows.add(new FlowEntry(flowData));
     }
 
-    public static void addFlowEntries(ArrayList<FlowEntry> flowsEntriesList){
-        flows.addAll(flowsEntriesList);
+    public static void addFlowEntries(ArrayList<FlowData> flowsDataList){
+        for(FlowData flowData: flowsDataList){
+            flows.add(new FlowEntry(flowData));
+        }
     }
 
     public static void printFlowInfoAll(){
         for(FlowEntry flowEntry: flows){
-            log.info(flowEntry.toString());
+            log.info(flowEntry.geFlowData().toString());
         }
+    }
+
+    public static ArrayList<FlowEntry> getFlows(){
+        return flows;
     }
 }

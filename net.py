@@ -54,11 +54,14 @@ def topo():
     print(hosts)
 
     threads = []
-
     net.start()
+    time.sleep(2)
+        
     for i in range(2):
         source = random.choice(left)
         dest = random.choice(right)
+        src_port = 2000 + source + 1
+        dest_port = 2000 + dest + 1
         left.remove(source)
         right.remove(dest)
         source = hosts[source]
@@ -74,9 +77,9 @@ def topo():
         recv_dbg_log = "dbg_recv_{}_{}.log".format(source, dest).replace(" ", "_")
 
         print("Sending traffic from {} to {}".format(source, dest))
-        dest.cmd("./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log))
+        dest.cmd("./ITGRecv -l {} -rp {} -T UDP >> {} 2>> {} &".format(recv_log, dest_port, recv_dbg_log, recv_dbg_log))
         time.sleep(1)
-        source.cmd("./ITGSend -a {} -l {} >> {} 2>> {} &".format(dest.IP(), send_log, send_dbg_log, send_dbg_log))
+        source.cmd("./ITGSend -a {} -l {} -sp {} -rp {} -T UDP >> {} 2>> {} &".format(dest.IP(), send_log, src_port, dest_port, send_dbg_log, send_dbg_log))
 
 
     CLI( net )

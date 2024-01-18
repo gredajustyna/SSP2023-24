@@ -19,6 +19,8 @@ import org.projectfloodlight.openflow.types.IpProtocol;
 import org.projectfloodlight.openflow.types.MacAddress;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.projectfloodlight.openflow.types.OFVlanVidMatch;
+import org.projectfloodlight.openflow.types.TransportPort;
+import org.projectfloodlight.openflow.types.U64;
 import org.projectfloodlight.openflow.types.VlanVid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +49,6 @@ public class Flows {
 	protected static boolean FLOWMOD_DEFAULT_MATCH_MAC = false;
 	protected static boolean FLOWMOD_DEFAULT_MATCH_IP_ADDR = true;
 	protected static boolean FLOWMOD_DEFAULT_MATCH_TRANSPORT = false;
-
 
 	public static short idleTimeout = 5;
 	public static short hardTimeout = 0;
@@ -166,14 +167,67 @@ public class Flows {
 			if (eth.getEtherType() == EthType.ARP) {
 				arp = (ARP) eth.getPayload();
 				mb.setExact(MatchField.ETH_TYPE, EthType.ARP)
-					.setExact(MatchField.ARP_TPA, arp.getTargetProtocolAddress());
+						.setExact(MatchField.ARP_TPA, arp.getTargetProtocolAddress());
 			}
 		}
 
 		return mb.build();
 	}
 
-	public static void insertFlowsOnRoute(Route route, IOFSwitchService switchService, FloodlightContext cntx){
+	public static void simpleQoSAdd(IOFSwitch sw, OFPort inPort,
+			OFPort outPort, FloodlightContext cntx, FlowEntry flow) {
+
+		// FlowModBuilder
+		OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
+
+		// match
+		// The packet in match will only contain the port number.
+		// We need to add in specifics for the hosts we're routing between.
+
+		Match.Builder mb = sw.getOFFactory().buildMatch();
+		mb.setExact(MatchField.IN_PORT, inPort);
+
+		IPv4Address srcIp = IPv4Address.of(flow.geFlowData().getSrcIp());
+		IPv4Address dstIp = IPv4Address.of(flow.geFlowData().getDestIp());
+
+		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4)
+				.setExact(MatchField.IPV4_SRC, srcIp)
+				.setExact(MatchField.IPV4_DST, dstIp);
+
+		TransportPort srcPort = TransportPort.of(flow.geFlowData().getSrcPort());
+		TransportPort destPort = TransportPort.of(flow.geFlowData().getDestPort());
+		mb.setExact(MatchField.IP_PROTO, IpProtocol.UDP)
+				.setExact(MatchField.UDP_SRC, srcPort)
+				.setExact(MatchField.UDP_DST, destPort);
+
+		Match m = mb.build();
+
+		// actions
+		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
+		List<OFAction> actions = new ArrayList<OFAction>();
+		aob.setPort(outPort);
+		aob.setMaxLen(Integer.MAX_VALUE);
+		actions.add(aob.build());
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT)
+				.setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+				.setOutPort(outPort)
+				.setPriority(FLOWMOD_DEFAULT_PRIORITY)
+				.setCookie(U64.of(flow.geFlowData().getId()));
+		fmb.setActions(actions);
+		// write flow to switch
+		try {
+			sw.write(fmb.build());
+			logger.info(
+					"SDN_PROJ:: Flow from UDP port {} forwarded to UDP port {}; match: {}",
+					new Object[] { srcPort.getPort(),
+						destPort.getPort(), m.toString() });
+		} catch (Exception e) {
+			logger.error("SDN_PROJ:: error {}", e);
+		}
+
+	}
+
+	public static void insertFlowsOnRoute(Route route, IOFSwitchService switchService, FloodlightContext cntx) {
 		List<NodePortTuple> switchPortList = route.getPath();
 		for (int indx = switchPortList.size() - 1; indx > 0; indx -= 2) {
 			// indx and indx-1 will always have the same switch DPID.
@@ -186,8 +240,27 @@ public class Flows {
 			}
 			logger.info("CINUS:: switch info: " + sw.toString());
 			OFPort outPort = switchPortList.get(indx).getPortId();
-			OFPort inPort = switchPortList.get(indx-1).getPortId();
+			OFPort inPort = switchPortList.get(indx - 1).getPortId();
 			simpleAdd(sw, inPort, outPort, cntx);
+		}
+	}
+
+	public static void insertQoSFlowsOnRoute(Route route, IOFSwitchService switchService, FloodlightContext cntx,
+			FlowEntry flow) {
+		List<NodePortTuple> switchPortList = route.getPath();
+		for (int indx = switchPortList.size() - 1; indx > 0; indx -= 2) {
+			// indx and indx-1 will always have the same switch DPID.
+			DatapathId switchDPID = switchPortList.get(indx).getNodeId();
+			IOFSwitch sw = switchService.getSwitch(switchDPID);
+
+			if (sw == null) {
+				logger.warn("SDN_PROJ:: Unable to push route, switch at DPID {} " + "not available", switchDPID);
+				return;
+			}
+			logger.info("SDN_PROJ:: switch info: " + sw.toString());
+			OFPort outPort = switchPortList.get(indx).getPortId();
+			OFPort inPort = switchPortList.get(indx - 1).getPortId();
+			simpleQoSAdd(sw, inPort, outPort, cntx, flow);
 		}
 	}
 }
