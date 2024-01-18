@@ -47,7 +47,7 @@ class MyTopo(Topo):
 def topo():
     random.seed(0)
     topos = { 'mytopo': (lambda: MyTopo())}
-    net = Mininet(topo=MyTopo(), controller=lambda name: RemoteController( name, ip='192.168.1.7', port=6653 ))
+    net = Mininet(topo=MyTopo(), controller=lambda name: RemoteController( name, ip='192.168.88.155', port=6653 ))
     hosts = net.hosts
     left = range(0,5)
     right = range(5,10)
@@ -56,19 +56,22 @@ def topo():
     threads = []
     net.start()
     
+    id = 0
     for switch in net.switches:
-        switch.cmd(r"sudo ovs-vsctl -- set Port s1-eth1 qos=@newqos -- \
---id=@newqos create QoS type=linux-htb other-config:max-rate=10000000 queues=0=@q0,1=@q1,2=@q2,3=@q3,4=@q4,5=@q5,6=@q6,7=@q7,8=@q8,9=@q9 -- \
---id=@q0 create Queue other-config:min-rate=1000000 other-config:max-rate=1000000 -- \
---id=@q1 create Queue other-config:min-rate=2000000 other-config:max-rate=2000000 -- \
---id=@q2 create Queue other-config:min-rate=3000000 other-config:max-rate=3000000 -- \
---id=@q3 create Queue other-config:min-rate=4000000 other-config:max-rate=4000000 -- \
---id=@q4 create Queue other-config:min-rate=5000000 other-config:max-rate=5000000 -- \
---id=@q5 create Queue other-config:min-rate=6000000 other-config:max-rate=6000000 -- \
---id=@q6 create Queue other-config:min-rate=7000000 other-config:max-rate=7000000 -- \
---id=@q7 create Queue other-config:min-rate=8000000 other-config:max-rate=8000000 -- \
---id=@q8 create Queue other-config:min-rate=9000000 other-config:max-rate=9000000 -- \
---id=@q9 create Queue other-config:min-rate=10000000 other-config:max-rate=10000000 ")
+        id += 1
+        for i in range(1,5):
+            switch.cmd(r"sudo ovs-vsctl -- set Port s{}-eth{} qos=@newqos -- \
+            --id=@newqos create QoS type=linux-htb other-config:max-rate=10000000 queues=0=@q0,1=@q1,2=@q2,3=@q3,4=@q4,5=@q5,6=@q6,7=@q7,8=@q8,9=@q9 -- \
+            --id=@q0 create Queue other-config:min-rate=1000000 other-config:max-rate=1000000 -- \
+            --id=@q1 create Queue other-config:min-rate=2000000 other-config:max-rate=2000000 -- \
+            --id=@q2 create Queue other-config:min-rate=3000000 other-config:max-rate=3000000 -- \
+            --id=@q3 create Queue other-config:min-rate=4000000 other-config:max-rate=4000000 -- \
+            --id=@q4 create Queue other-config:min-rate=5000000 other-config:max-rate=5000000 -- \
+            --id=@q5 create Queue other-config:min-rate=6000000 other-config:max-rate=6000000 -- \
+            --id=@q6 create Queue other-config:min-rate=7000000 other-config:max-rate=7000000 -- \
+            --id=@q7 create Queue other-config:min-rate=8000000 other-config:max-rate=8000000 -- \
+            --id=@q8 create Queue other-config:min-rate=9000000 other-config:max-rate=9000000 -- \
+            --id=@q9 create Queue other-config:min-rate=10000000 other-config:max-rate=10000000 ".format(id, i))
         
     time.sleep(2)
     for i in range(2):
@@ -92,7 +95,7 @@ def topo():
 
         print("Sending traffic from {} to {}".format(source, dest))
         dest_cmd = "./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log)
-        src_cmd = "./ITGSend -T UDP -a {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), send_log, dest_port, send_dbg_log, send_dbg_log)
+        src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), 1000, send_log, dest_port, send_dbg_log, send_dbg_log)
         print(dest_cmd)
         print(src_cmd)
         dest.cmd(dest_cmd)

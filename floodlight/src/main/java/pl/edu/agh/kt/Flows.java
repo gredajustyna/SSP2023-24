@@ -8,6 +8,7 @@ import java.util.List;
 import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.action.OFAction;
+import org.projectfloodlight.openflow.protocol.action.OFActionEnqueue;
 import org.projectfloodlight.openflow.protocol.action.OFActionOutput;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
@@ -133,6 +134,33 @@ public class Flows {
 		}
 	}
 
+	public static void enqueue(IOFSwitch sw, OFPacketIn pin,
+							   FloodlightContext cntx, OFPort outPort, long queueId) {
+// FlowModBuilder
+		OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
+// match
+		Match m = createMatchFromPacket(sw, pin.getInPort(), cntx);
+		List<OFAction> actions = new ArrayList<OFAction>();
+		OFActionEnqueue enqueue = sw.getOFFactory().actions().buildEnqueue()
+				.setPort(outPort).setQueueId(queueId).build();
+		actions.add(enqueue);
+		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT)
+				.setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
+				.setBufferId(pin.getBufferId()).setOutPort(outPort)
+				.setPriority(FLOWMOD_DEFAULT_PRIORITY);
+		fmb.setActions(actions);
+// write flow to switch
+		try {
+			sw.write(fmb.build());
+			logger.info(
+					"Flow from port {} forwarded to port {}; match: {}",
+					new Object[] { pin.getInPort().getPortNumber(),
+							outPort.getPortNumber(), m.toString() });
+		} catch (Exception e) {
+			logger.error("error {}", e);
+		}
+	}
+
 	public static Match createMatchFromPacket(IOFSwitch sw, OFPort inPort,
 			FloodlightContext cntx) {
 		// The packet in match will only contain the port number.
@@ -205,6 +233,9 @@ public class Flows {
 		// actions
 		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
 		List<OFAction> actions = new ArrayList<OFAction>();
+		OFActionEnqueue enqueue = sw.getOFFactory().actions().buildEnqueue()
+				.setPort(outPort).setQueueId(1).build();
+		actions.add(enqueue);
 		aob.setPort(outPort);
 		aob.setMaxLen(Integer.MAX_VALUE);
 		actions.add(aob.build());
