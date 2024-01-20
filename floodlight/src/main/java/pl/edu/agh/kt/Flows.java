@@ -236,9 +236,9 @@ public class Flows {
 		OFActionEnqueue enqueue = sw.getOFFactory().actions().buildEnqueue()
 				.setPort(outPort).setQueueId(flow.getFlowQueueId()).build();
 		actions.add(enqueue);
-		aob.setPort(outPort);
-		aob.setMaxLen(Integer.MAX_VALUE);
-		actions.add(aob.build());
+		// aob.setPort(outPort);
+		// aob.setMaxLen(Integer.MAX_VALUE);
+		// actions.add(aob.build());
 		fmb.setMatch(m).setIdleTimeout(FLOWMOD_DEFAULT_IDLE_TIMEOUT)
 				.setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
 				.setOutPort(outPort)
