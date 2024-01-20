@@ -9,13 +9,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.projectfloodlight.openflow.protocol.OFFlowStatsEntry;
 import org.projectfloodlight.openflow.protocol.OFFlowStatsReply;
-import org.projectfloodlight.openflow.protocol.OFFlowStatsRequest;
-import org.projectfloodlight.openflow.protocol.OFPortStatsEntry;
-import org.projectfloodlight.openflow.protocol.OFPortStatsReply;
 import org.projectfloodlight.openflow.protocol.OFStatsReply;
 import org.projectfloodlight.openflow.protocol.OFStatsRequest;
-import org.projectfloodlight.openflow.types.OFPort;
-import org.projectfloodlight.openflow.types.TableId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -29,9 +24,7 @@ public class StatisticsCollector {
 	public class PortStatisticsPoller extends TimerTask {
 		private final Logger logger = LoggerFactory
 				.getLogger(PortStatisticsPoller.class);
-		private final int MAX_SUPPORTED_PORTS = 8;
-		private long[] previousTxBytes = new long[MAX_SUPPORTED_PORTS];
-		private long[] previousRxBytes = new long[MAX_SUPPORTED_PORTS];
+		private long elapsedTime = 0;
 
 		@Override
 		public void run() {
@@ -41,66 +34,51 @@ public class StatisticsCollector {
 					logger.error("run() end (no switch)");
 					return;
 				}
+
+				logger.info("###### FLOWS STATS ######");
+				this.elapsedTime += PORT_STATISTICS_POLLING_INTERVAL;
+				logger.info("SDN_PROJ: elapsed time: {} [s]", this.elapsedTime / 1000);
+				OFStatsRequest<?> req = null;
 				ListenableFuture<?> future;
 				List<OFStatsReply> values = null;
-				OFStatsRequest<?> req = null;
-				req = sw.getOFFactory().buildPortStatsRequest()
-						.setPortNo(OFPort.ANY).build();
+
 				try {
-					if (req != null) {
-						future = sw.writeStatsRequest(req);
-						values = (List<OFStatsReply>) future.get(
-								PORT_STATISTICS_POLLING_INTERVAL * 1000 / 2,
-								TimeUnit.MILLISECONDS);
-					}
-					OFPortStatsReply psr = (OFPortStatsReply) values.get(0);
-					logger.info("Switch id: {}", sw.getId());
-					for (OFPortStatsEntry pse : psr.getEntries()) {
-						if (pse.getPortNo().getPortNumber() > 0) {
-							int portNumber = pse.getPortNo().getPortNumber();
-							logger.info("\tport number: {}, txPackets: {}", pse
-									.getPortNo().getPortNumber(), pse
-									.getTxPackets().getValue());
-							double txTput = (double)(pse.getTxBytes().getValue() - previousTxBytes[portNumber])/PORT_STATISTICS_POLLING_INTERVAL;
-							double rxTput = (double)(pse.getRxBytes().getValue() - previousRxBytes[portNumber])/PORT_STATISTICS_POLLING_INTERVAL;
-							previousTxBytes[portNumber] = pse.getTxBytes().getValue();
-							previousRxBytes[portNumber] = pse.getRxBytes().getValue();	
-							logger.info("\tport number: {}, txTput: {} [kb/s]",  pse.getPortNo().getPortNumber(), txTput);
-							logger.info("\tport number: {}, rxTput: {} [kb/s]",  pse.getPortNo().getPortNumber(), rxTput);
-						}
-					}
-				} catch (InterruptedException | ExecutionException
-						| TimeoutException ex) {
-					logger.error("Error during statistics polling", ex);
-				}
-				logger.info("###### FLOWS STATS ######");
-				try{
-					req = sw.getOFFactory().buildFlowStatsRequest()
-			                .setMatch(sw.getOFFactory().buildMatch().build())
-			                .setOutPort(OFPort.ANY)
-			                .setTableId(TableId.ALL)
-			                .build();
-					
+					req = sw.getOFFactory().buildFlowStatsRequest().build();
+
 					future = sw.writeStatsRequest(req);
 					values = (List<OFStatsReply>) future.get(
 							PORT_STATISTICS_POLLING_INTERVAL * 1000 / 2,
 							TimeUnit.MILLISECONDS);
 					OFFlowStatsReply fsr = (OFFlowStatsReply) values.get(0);
-					for (OFFlowStatsEntry fse : fsr.getEntries()){
-						logger.info("\tflowId: {}", fse.getCookie().getValue());
-						logger.info("\tpacketCount: {}", fse.getPacketCount().getValue());
+					for (OFFlowStatsEntry fse : fsr.getEntries()) {
+						FlowEntry flow = FlowsDb.getFlowById(fse.getCookie().getValue());
+
+						if (flow == null) {
+							continue;
+						}
+
+						logger.info("\t SDN_PROJ: flowId: {}", fse.getCookie().getValue());
+						logger.info("\t SDN_PROJ: byteCount: {}", fse.getByteCount().getValue());
+						long byteDiff = fse.getByteCount().getValue() - flow.getByteCount();
+						double currThput = (byteDiff * 8 / (PORT_STATISTICS_POLLING_INTERVAL / 1000.0)) / 1000000.0; // in
+																														// Mb/s
+						flow.setLastThput(flow.getCurrentThput());
+						flow.setCurrentThput(currThput);
+						flow.setByteCount(fse.getByteCount().getValue());
+						logger.info("\t SDN_PROJ: lastThput: {} [Mb/s]", flow.getLastThput());
+						logger.info("\t SDN_PROJ: currentThput: {} [Mb/s]", flow.getCurrentThput());
 					}
-					
+
 				} catch (InterruptedException | ExecutionException
 						| TimeoutException ex) {
-					logger.error("Error during statistics polling", ex);
+					logger.error("Error during statistics polling: {}", ex);
 				}
 			}
 			logger.debug("run() end");
 		}
 	}
 
-	public static final int PORT_STATISTICS_POLLING_INTERVAL = 3000; // in ms
+	public static final int PORT_STATISTICS_POLLING_INTERVAL = 1000; // in ms
 	private static StatisticsCollector singleton;
 
 	private StatisticsCollector(IOFSwitch sw) {

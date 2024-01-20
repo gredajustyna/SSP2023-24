@@ -215,26 +215,26 @@ public class Flows {
 		Match.Builder mb = sw.getOFFactory().buildMatch();
 		mb.setExact(MatchField.IN_PORT, inPort);
 
-		IPv4Address srcIp = IPv4Address.of(flow.geFlowData().getSrcIp());
-		IPv4Address dstIp = IPv4Address.of(flow.geFlowData().getDestIp());
+		IPv4Address srcIp = IPv4Address.of(flow.getFlowData().getSrcIp());
+		IPv4Address dstIp = IPv4Address.of(flow.getFlowData().getDestIp());
 
 		mb.setExact(MatchField.ETH_TYPE, EthType.IPv4)
 				.setExact(MatchField.IPV4_SRC, srcIp)
 				.setExact(MatchField.IPV4_DST, dstIp);
 
-		TransportPort srcPort = TransportPort.of(flow.geFlowData().getSrcPort());
-		TransportPort destPort = TransportPort.of(flow.geFlowData().getDestPort());
+		TransportPort srcPort = TransportPort.of(flow.getFlowData().getSrcPort());
+		TransportPort destPort = TransportPort.of(flow.getFlowData().getDestPort());
 		mb.setExact(MatchField.IP_PROTO, IpProtocol.UDP)
 				//.setExact(MatchField.UDP_SRC, srcPort)
 				.setExact(MatchField.UDP_DST, destPort);
 
 		Match m = mb.build();
-
+		flow.setMatch(m); // needed for statistics collector
 		// actions
 		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
 		List<OFAction> actions = new ArrayList<OFAction>();
 		OFActionEnqueue enqueue = sw.getOFFactory().actions().buildEnqueue()
-				.setPort(outPort).setQueueId(1).build();
+				.setPort(outPort).setQueueId(flow.getFlowQueueId()).build();
 		actions.add(enqueue);
 		aob.setPort(outPort);
 		aob.setMaxLen(Integer.MAX_VALUE);
@@ -243,7 +243,7 @@ public class Flows {
 				.setHardTimeout(FLOWMOD_DEFAULT_HARD_TIMEOUT)
 				.setOutPort(outPort)
 				.setPriority(FLOWMOD_DEFAULT_PRIORITY)
-				.setCookie(U64.of(flow.geFlowData().getId()));
+				.setCookie(U64.of(flow.getFlowData().getId()));
 		fmb.setActions(actions);
 		// write flow to switch
 		try {

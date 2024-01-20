@@ -23,11 +23,21 @@ public class FlowsDb {
 
     public static void printFlowInfoAll(){
         for(FlowEntry flowEntry: flows){
-            log.info(flowEntry.geFlowData().toString());
+            log.info(flowEntry.getFlowData().toString());
         }
     }
 
     public static ArrayList<FlowEntry> getFlows(){
         return flows;
+    }
+
+    public static FlowEntry getFlowById(long id){
+        for(FlowEntry flowEntry: flows){
+            if (flowEntry.getFlowData().getId() == id){
+                return flowEntry;
+            }
+        }
+
+        return null;
     }
 }

@@ -14,6 +14,7 @@ import org.projectfloodlight.openflow.types.IPAddress;
 import org.projectfloodlight.openflow.types.IPv4Address;
 import org.projectfloodlight.openflow.types.OFPort;
 import org.projectfloodlight.openflow.types.U64;
+import org.python.antlr.ast.boolopType;
 
 import net.floodlightcontroller.core.FloodlightContext;
 import net.floodlightcontroller.core.IOFMessageListener;
@@ -49,6 +50,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	protected IOFSwitchService switchService;
 	protected static List<DatapathId> swList = new ArrayList<DatapathId>();
 	private static HashMap<String, IpToPort> ipToPortMap = new HashMap<>();
+	private boolean isStatisticsCollectorActivated = false;
 
 	@Override
 	public String getName() {
@@ -71,18 +73,26 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	public net.floodlightcontroller.core.IListener.Command receive(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
 
+		if (!isStatisticsCollectorActivated) {
+			IOFSwitch switch4 = switchService.getSwitch(DatapathId.of("00:00:00:00:00:00:00:04"));
+			StatisticsCollector.getInstance(switch4);
+			isStatisticsCollectorActivated = true;
+		}
+
 		OFPacketIn pin = (OFPacketIn) msg;
 		PacketExtractor packetExtractor = new PacketExtractor(cntx, msg);
 		packetExtractor.packetExtract(cntx);
 		IPv4Address destIp = packetExtractor.extractIp();
-		if (destIp != null){
+		if (destIp != null) {
 			logger.debug("CINUS:: got destIp: {}", destIp.toString());
-			if (ipToPortMap.containsKey(destIp.toString())){
+			if (ipToPortMap.containsKey(destIp.toString())) {
 				IpToPort ipToPort = ipToPortMap.get(destIp.toString());
-				logger.debug("CINUS:: resolved dest ip to port: {} on switch: {}", ipToPort.getPort(), ipToPort.getSw());
+				logger.debug("CINUS:: resolved dest ip to port: {} on switch: {}", ipToPort.getPort(),
+						ipToPort.getSw());
 				logger.debug("CINUS:: sw.getId(): {}", sw.getId());
-				Route route = routingService.getRoute(sw.getId(), pin.getInPort(), DatapathId.of(ipToPort.getSw()), OFPort.of(ipToPort.getPort()), U64.of(0));
-				if (route != null){
+				Route route = routingService.getRoute(sw.getId(), pin.getInPort(), DatapathId.of(ipToPort.getSw()),
+						OFPort.of(ipToPort.getPort()), U64.of(0));
+				if (route != null) {
 					logger.debug("CINUS:: resolved route: {}", route.toString());
 					Flows.insertFlowsOnRoute(route, switchService, cntx);
 				}
@@ -90,20 +100,24 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 
 			// check if there's a flow in FlowDB that has not been propagated
 			// wrzucilem to tutaj zeby sie rozpropagowaly od razu jak poleci pierwszy ARP
-			for(FlowEntry flow: FlowsDb.getFlows()){
-				if (!flow.getIsPropagated()){
-					destIp = IPv4Address.of(flow.geFlowData().getDestIp());
-					IPv4Address srcIp = IPv4Address.of(flow.geFlowData().getSrcIp());
-					if (ipToPortMap.containsKey(destIp.toString())){
+			for (FlowEntry flow : FlowsDb.getFlows()) {
+				if (!flow.getIsPropagated()) {
+					destIp = IPv4Address.of(flow.getFlowData().getDestIp());
+					IPv4Address srcIp = IPv4Address.of(flow.getFlowData().getSrcIp());
+					if (ipToPortMap.containsKey(destIp.toString())) {
 						IpToPort ipToPortDest = ipToPortMap.get(destIp.toString());
 						IpToPort ipToPortSrc = ipToPortMap.get(srcIp.toString());
-						logger.debug("SDN_PROJ:: resolved flow dest ip to port: {} on switch: {}", ipToPortDest.getPort(), ipToPortDest.getSw());
+						logger.debug("SDN_PROJ:: resolved flow dest ip to port: {} on switch: {}",
+								ipToPortDest.getPort(), ipToPortDest.getSw());
 						logger.debug("SDN_PROJ:: sw.getId(): {}", sw.getId());
-						Route route = routingService.getRoute(DatapathId.of(ipToPortSrc.getSw()), OFPort.of(ipToPortSrc.getPort()), DatapathId.of(ipToPortDest.getSw()), OFPort.of(ipToPortDest.getPort()), U64.of(0));
-						if (route != null){
-							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.geFlowData().getId(), route.toString());
+						Route route = routingService.getRoute(DatapathId.of(ipToPortSrc.getSw()),
+								OFPort.of(ipToPortSrc.getPort()), DatapathId.of(ipToPortDest.getSw()),
+								OFPort.of(ipToPortDest.getPort()), U64.of(0));
+						if (route != null) {
+							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.getFlowData().getId(),
+									route.toString());
 							Flows.insertQoSFlowsOnRoute(route, switchService, cntx, flow);
-							logger.debug("SDN_PROJ:: Propagated QoS flow with id: {}", flow.geFlowData().getId());
+							logger.debug("SDN_PROJ:: Propagated QoS flow with id: {}", flow.getFlowData().getId());
 							flow.setIsPropagated(true);
 						}
 					}
@@ -164,7 +178,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	public static void updateSwList(DatapathId sw) {
 		swList.add(sw);
 		logger.debug("CINUS:: current state of swList: ");
-		for(DatapathId s: swList){
+		for (DatapathId s : swList) {
 			logger.debug("CINUS:: sw: {}", s.toString());
 		}
 	}
@@ -172,13 +186,13 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 	public static void deleteFromSwList(DatapathId sw) {
 		swList.remove(sw);
 		logger.debug("CINUS:: current state of swList: ");
-		for(DatapathId s: swList){
+		for (DatapathId s : swList) {
 			logger.debug("CINUS:: sw: {}", s.toString());
 		}
 	}
 
 	public static void updateIpToPortMapping(List<IpToPort> ipToPortList) {
-		for(IpToPort ipToPort: ipToPortList){
+		for (IpToPort ipToPort : ipToPortList) {
 			ipToPortMap.put(ipToPort.getIp(), ipToPort);
 			logger.debug("CINUS:: added to ipToPortMap: ip: {} sw: {}", ipToPort.getIp(), ipToPort.getSw());
 		}

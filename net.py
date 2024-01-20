@@ -47,7 +47,7 @@ class MyTopo(Topo):
 def topo():
     random.seed(0)
     topos = { 'mytopo': (lambda: MyTopo())}
-    net = Mininet(topo=MyTopo(), controller=lambda name: RemoteController( name, ip='192.168.88.155', port=6653 ))
+    net = Mininet(topo=MyTopo(), controller=lambda name: RemoteController( name, ip='192.168.1.7', port=6653 ))
     hosts = net.hosts
     left = range(0,5)
     right = range(5,10)
@@ -95,7 +95,7 @@ def topo():
 
         print("Sending traffic from {} to {}".format(source, dest))
         dest_cmd = "./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log)
-        src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), 1000, send_log, dest_port, send_dbg_log, send_dbg_log)
+        src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), 250, send_log, dest_port, send_dbg_log, send_dbg_log)
         print(dest_cmd)
         print(src_cmd)
         dest.cmd(dest_cmd)
