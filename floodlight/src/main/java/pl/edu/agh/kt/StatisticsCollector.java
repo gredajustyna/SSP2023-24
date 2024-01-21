@@ -67,7 +67,13 @@ public class StatisticsCollector {
 						flow.setByteCount(fse.getByteCount().getValue());
 						logger.info("\t SDN_PROJ: lastThput: {} [Mb/s]", flow.getLastThput());
 						logger.info("\t SDN_PROJ: currentThput: {} [Mb/s]", flow.getCurrentThput());
+						logger.info("\t SDN_PROJ: trackedBW: {}", flow.getTrackedBW());
+						double diff = flow.getLastThput() - flow.getCurrentThput();
+						flow.setIsDecreasing(diff > 0.1);
+						flow.setIsGrowing(diff < 0.1);
 					}
+
+					FlowManager.manageFlows();
 
 				} catch (InterruptedException | ExecutionException
 						| TimeoutException ex) {

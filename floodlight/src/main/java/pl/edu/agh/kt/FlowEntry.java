@@ -12,6 +12,10 @@ public class FlowEntry {
     private double currentThput;
     private double lastThput;
     private Match match;
+    private double trackedBW;
+    private boolean isDecreasing;
+    private boolean isGrowing;
+    private long currentQueue;
 
     public FlowEntry(FlowData flowData){
         this.flowData = flowData;
@@ -20,6 +24,8 @@ public class FlowEntry {
         this.currentThput = 0.0;
         this.lastThput = 0.0;
         this.match = null;
+        this.trackedBW = Math.round(Math.ceil(flowData.getMinBw()));
+        this.currentQueue = getFlowQueueId();
     }
 
     public FlowData getFlowData(){
@@ -42,6 +48,14 @@ public class FlowEntry {
 
         long queueId = Math.round(Math.ceil(flowData.getMinBw()));
         return queueId - 1;
+    }
+
+    public boolean isOnItsQueue(){
+        return getFlowQueueId() == currentQueue;
+    }
+
+    public boolean isQueueShared(){
+        return (getCurrentQueue() < getFlowQueueId());
     }
 
     public long getByteCount(){
@@ -74,5 +88,37 @@ public class FlowEntry {
 
     public void setMatch(Match match){
         this.match = match;
+    }
+
+    public double getTrackedBW(){
+        return this.trackedBW;
+    }
+
+    public void setTrackedBW(double trackedBW){
+        this.trackedBW = trackedBW;
+    }
+
+    public void setIsDecreasing(boolean isDecreasing) {
+        this.isDecreasing = isDecreasing;
+    }
+
+    public boolean isDecreasing() {
+        return isDecreasing;
+    }
+
+    public void setIsGrowing(boolean isGrowing) {
+        this.isGrowing = isGrowing;
+    }
+
+    public boolean isGrowing() {
+        return isGrowing;
+    }
+
+    public void setCurrentQueue(long currentQueue) {
+        this.currentQueue = currentQueue;
+    }
+
+    public long getCurrentQueue() {
+        return currentQueue;
     }
 }

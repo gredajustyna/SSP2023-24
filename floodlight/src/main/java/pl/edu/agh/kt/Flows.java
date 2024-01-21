@@ -203,7 +203,7 @@ public class Flows {
 	}
 
 	public static void simpleQoSAdd(IOFSwitch sw, OFPort inPort,
-			OFPort outPort, FloodlightContext cntx, FlowEntry flow) {
+			OFPort outPort, FlowEntry flow) {
 
 		// FlowModBuilder
 		OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
@@ -234,7 +234,7 @@ public class Flows {
 		OFActionOutput.Builder aob = sw.getOFFactory().actions().buildOutput();
 		List<OFAction> actions = new ArrayList<OFAction>();
 		OFActionEnqueue enqueue = sw.getOFFactory().actions().buildEnqueue()
-				.setPort(outPort).setQueueId(flow.getFlowQueueId()).build();
+				.setPort(outPort).setQueueId(flow.getCurrentQueue()).build();
 		actions.add(enqueue);
 		// aob.setPort(outPort);
 		// aob.setMaxLen(Integer.MAX_VALUE);
@@ -276,7 +276,7 @@ public class Flows {
 		}
 	}
 
-	public static void insertQoSFlowsOnRoute(Route route, IOFSwitchService switchService, FloodlightContext cntx,
+	public static void insertQoSFlowsOnRoute(Route route, IOFSwitchService switchService,
 			FlowEntry flow) {
 		List<NodePortTuple> switchPortList = route.getPath();
 		for (int indx = switchPortList.size() - 1; indx > 0; indx -= 2) {
@@ -291,7 +291,7 @@ public class Flows {
 			logger.info("SDN_PROJ:: switch info: " + sw.toString());
 			OFPort outPort = switchPortList.get(indx).getPortId();
 			OFPort inPort = switchPortList.get(indx - 1).getPortId();
-			simpleQoSAdd(sw, inPort, outPort, cntx, flow);
+			simpleQoSAdd(sw, inPort, outPort, flow);
 		}
 	}
 }

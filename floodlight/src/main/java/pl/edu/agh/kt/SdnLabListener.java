@@ -116,7 +116,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 						if (route != null) {
 							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.getFlowData().getId(),
 									route.toString());
-							Flows.insertQoSFlowsOnRoute(route, switchService, cntx, flow);
+							Flows.insertQoSFlowsOnRoute(route, switchService, flow);
 							logger.debug("SDN_PROJ:: Propagated QoS flow with id: {}", flow.getFlowData().getId());
 							flow.setIsPropagated(true);
 						}
@@ -159,6 +159,8 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 		topologyService = context.getServiceImpl(ITopologyService.class);
 		routingService = context.getServiceImpl(IRoutingService.class);
 		switchService = context.getServiceImpl(IOFSwitchService.class);
+		FlowManager.routingService = routingService;
+		FlowManager.switchService = switchService;
 	}
 
 	public static Routing getRouting() {
@@ -196,5 +198,9 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 			ipToPortMap.put(ipToPort.getIp(), ipToPort);
 			logger.debug("CINUS:: added to ipToPortMap: ip: {} sw: {}", ipToPort.getIp(), ipToPort.getSw());
 		}
+	}
+
+	public static IpToPort getSwPort(IPv4Address address) {
+		return ipToPortMap.get(address.toString());
 	}
 }
