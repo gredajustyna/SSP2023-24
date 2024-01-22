@@ -71,6 +71,7 @@ public class StatisticsCollector {
 						double diff = flow.getLastThput() - flow.getCurrentThput();
 						flow.setIsDecreasing(diff > 0.1);
 						flow.setIsGrowing(diff < -0.1 || Math.abs(flow.getCurrentThput() - (flow.getCurrentQueue()+1.0)) < 0.1);
+						flow.setTrackedBW(Math.ceil(flow.getCurrentThput()));
 					}
 
 					FlowManager.manageFlows();
