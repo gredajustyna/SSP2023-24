@@ -6,7 +6,7 @@
         "srcPort": 2003,
         "destPort": 8999,
         "duration": 10.0,
-        "minBw": 2.0,
+        "minBw": 4.0,
         "prio": 5
     },
     {
@@ -16,7 +16,7 @@
         "srcPort": 2002,
         "destPort": 8999,
         "duration": 10.0,
-        "minBw": 4.0,
+        "minBw": 2.0,
         "prio": 6
     }
 ]

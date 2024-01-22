@@ -95,7 +95,10 @@ def topo():
 
         print("Sending traffic from {} to {}".format(source, dest))
         dest_cmd = "./ITGRecv -l {} >> {} 2>> {} &".format(recv_log, recv_dbg_log, recv_dbg_log)
-        src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} >> {} 2>> {} &".format(dest.IP(), 250, send_log, dest_port, send_dbg_log, send_dbg_log)
+        if source == hosts[1]:
+            src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} -t 30000 >> {} 2>> {} &".format(dest.IP(), 500, send_log, dest_port, send_dbg_log, send_dbg_log)
+        else:
+            src_cmd = "./ITGSend -T UDP -a {} -C {} -l {} -rp {} -t 30000 >> {} 2>> {} &".format(dest.IP(), 250, send_log, dest_port, send_dbg_log, send_dbg_log)
         print(dest_cmd)
         print(src_cmd)
         dest.cmd(dest_cmd)
