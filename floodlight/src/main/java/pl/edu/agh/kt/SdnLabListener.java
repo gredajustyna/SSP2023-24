@@ -116,7 +116,7 @@ public class SdnLabListener implements IFloodlightModule, IOFMessageListener {
 						if (route != null) {
 							logger.debug("SDN_PROJ:: resolved flow (id: {}) route: {}", flow.getFlowData().getId(),
 									route.toString());
-							Flows.insertQoSFlowsOnRoute(route, switchService, flow);
+							Flows.insertQoSFlowsOnRoute(route, switchService, flow, false);
 							logger.debug("SDN_PROJ:: Propagated QoS flow with id: {}", flow.getFlowData().getId());
 							flow.setIsPropagated(true);
 						}

@@ -203,10 +203,15 @@ public class Flows {
 	}
 
 	public static void simpleQoSAdd(IOFSwitch sw, OFPort inPort,
-			OFPort outPort, FlowEntry flow) {
+			OFPort outPort, FlowEntry flow, boolean modify) {
 
 		// FlowModBuilder
-		OFFlowMod.Builder fmb = sw.getOFFactory().buildFlowAdd();
+		OFFlowMod.Builder fmb;
+		if(modify){
+			fmb = sw.getOFFactory().buildFlowModify();
+		} else {
+			fmb = sw.getOFFactory().buildFlowAdd();
+		}
 
 		// match
 		// The packet in match will only contain the port number.
@@ -277,7 +282,7 @@ public class Flows {
 	}
 
 	public static void insertQoSFlowsOnRoute(Route route, IOFSwitchService switchService,
-			FlowEntry flow) {
+			FlowEntry flow, boolean modify) {
 		List<NodePortTuple> switchPortList = route.getPath();
 		for (int indx = switchPortList.size() - 1; indx > 0; indx -= 2) {
 			// indx and indx-1 will always have the same switch DPID.
@@ -291,7 +296,7 @@ public class Flows {
 			logger.info("SDN_PROJ:: switch info: " + sw.toString());
 			OFPort outPort = switchPortList.get(indx).getPortId();
 			OFPort inPort = switchPortList.get(indx - 1).getPortId();
-			simpleQoSAdd(sw, inPort, outPort, flow);
+			simpleQoSAdd(sw, inPort, outPort, flow, modify);
 		}
 	}
 }

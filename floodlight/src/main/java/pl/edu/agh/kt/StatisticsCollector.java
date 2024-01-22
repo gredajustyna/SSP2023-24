@@ -70,7 +70,7 @@ public class StatisticsCollector {
 						logger.info("\t SDN_PROJ: trackedBW: {}", flow.getTrackedBW());
 						double diff = flow.getLastThput() - flow.getCurrentThput();
 						flow.setIsDecreasing(diff > 0.1);
-						flow.setIsGrowing(diff < 0.1);
+						flow.setIsGrowing(diff < -0.1 || Math.abs(flow.getCurrentThput() - (flow.getCurrentQueue()+1.0)) < 0.1);
 					}
 
 					FlowManager.manageFlows();
@@ -84,7 +84,7 @@ public class StatisticsCollector {
 		}
 	}
 
-	public static final int PORT_STATISTICS_POLLING_INTERVAL = 1000; // in ms
+	public static final int PORT_STATISTICS_POLLING_INTERVAL = 2000; // in ms
 	private static StatisticsCollector singleton;
 
 	private StatisticsCollector(IOFSwitch sw) {
