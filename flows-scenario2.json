@@ -1,0 +1,52 @@
+[
+    {
+        "id": 101,
+        "srcIp": "10.0.0.3",
+        "destIp": "10.0.0.10",
+        "srcPort": 2001,
+        "destPort": 8999,
+        "duration": 10.0,
+        "minBw": 1.0,
+        "prio": 1
+    },
+    {
+        "id": 102,
+        "srcIp": "10.0.0.2",
+        "destIp": "10.0.0.9",
+        "srcPort": 2002,
+        "destPort": 8999,
+        "duration": 10.0,
+        "minBw": 2.0,
+        "prio": 2
+    },
+    {
+        "id": 103,
+        "srcIp": "10.0.0.4",
+        "destIp": "10.0.0.6",
+        "srcPort": 2003,
+        "destPort": 8999,
+        "duration": 10.0,
+        "minBw": 3.0,
+        "prio": 3
+    },
+    {
+        "id": 104,
+        "srcIp": "10.0.0.5",
+        "destIp": "10.0.0.7",
+        "srcPort": 2004,
+        "destPort": 8999,
+        "duration": 10.0,
+        "minBw": 4.0,
+        "prio": 4
+    },
+    {
+        "id": 105,
+        "srcIp": "10.0.0.1",
+        "destIp": "10.0.0.8",
+        "srcPort": 2005,
+        "destPort": 8999,
+        "duration": 10.0,
+        "minBw": 5.0,
+        "prio": 5
+    }
+]
