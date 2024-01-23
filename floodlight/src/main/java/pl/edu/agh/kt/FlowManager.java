@@ -113,7 +113,7 @@ public class FlowManager {
                     flow.getCurrentThput());
             logger.info(log);
             if ((flow.isDecreasing() || (!flow.isDecreasing() && !flow.isGrowing()))
-                    && flow.getCurrentThput() < lowerBound) {
+                    && flow.getCurrentThput() < lowerBound && flow.isOnItsQueue()) {
                 logger.info("SDN_PROJ:: added flow with id {} to availablePool", flow.getFlowData().getId());
                 // double decrease = flow.getTrackedBW() - Math.ceil(flow.getCurrentThput());
                 flow.setTrackedBW(Math.ceil(flow.getCurrentThput()));
