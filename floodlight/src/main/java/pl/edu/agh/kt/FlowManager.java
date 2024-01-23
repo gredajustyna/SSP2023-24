@@ -71,8 +71,8 @@ public class FlowManager {
                         availableFlow.setCurrentQueue(flow.getCurrentQueue());
                         flow.setCurrentQueue(sharedQueue);
                         availablePool.remove(availableFlow);
-                        logger.info("SDN_PROJ:: zamiana kolejek: flow {}, availableFlow {}",
-                                flow.getFlowData().toString(), availableFlow.getFlowData().toString());
+                        logger.info("SDN_PROJ:: Changing the following flow's queues: flow {}, availableFlow {}",
+                                flow.toString(), availableFlow.toString());
                         isCommitNeeded = true;
                         statsIgnoreCount = 2;
                         break;
@@ -87,8 +87,8 @@ public class FlowManager {
             if (flow.isGrowing() && flow.isQueueShared()) {
                 for (FlowEntry sharedFlow : sharedPool) {
                     if (sharedFlow.getCurrentQueue() == flow.getFlowQueueId()) {
-                        logger.info("SDN_PROJ:: oddanie kolejek: flow {}, sharedFlow {}", flow.getFlowData().toString(),
-                                sharedFlow.getFlowData().toString());
+                        logger.info("SDN_PROJ:: Returning shared queue: flow {}, sharedFlow {}", flow.toString(),
+                                sharedFlow.toString());
                         long sharedQueue = sharedFlow.getFlowQueueId();
                         sharedFlow.setCurrentQueue(sharedFlow.getFlowQueueId());
                         sharedFlow.setTrackedBW((double) (flow.getCurrentQueue() + 1));
@@ -107,14 +107,10 @@ public class FlowManager {
     private static void seizeBW() {
         for (FlowEntry flow : FlowsDb.getFlows()) {
             double lowerBound = 0.75 * flow.getFlowData().getMinBw();
-            String log = String.format(
-                    "SDN_PROJ: Flow id: %d, lowerBound: %f, flow.isDecreasing(): %b, flow.isGrowing(): %b, flow.getCurrentThput(): %f",
-                    flow.getFlowData().getId(), lowerBound, flow.isDecreasing(), flow.isGrowing(),
-                    flow.getCurrentThput());
-            logger.info(log);
+            logger.info("SDN_PROJ:: " + flow.toString());
             if ((flow.isDecreasing() || (!flow.isDecreasing() && !flow.isGrowing()))
                     && flow.getCurrentThput() < lowerBound && flow.isOnItsQueue()) {
-                logger.info("SDN_PROJ:: added flow with id {} to availablePool", flow.getFlowData().getId());
+                logger.info("SDN_PROJ:: Added flow with id {} to availablePool.", flow.getFlowData().getId());
                 // double decrease = flow.getTrackedBW() - Math.ceil(flow.getCurrentThput());
                 flow.setTrackedBW(Math.ceil(flow.getCurrentThput()));
                 availablePool.add(flow);

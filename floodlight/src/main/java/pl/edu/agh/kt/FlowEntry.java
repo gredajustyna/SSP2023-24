@@ -17,7 +17,7 @@ public class FlowEntry {
     private boolean isGrowing;
     private long currentQueue;
 
-    public FlowEntry(FlowData flowData){
+    public FlowEntry(FlowData flowData) {
         this.flowData = flowData;
         isPropagated = false;
         this.byteCount = 0;
@@ -28,20 +28,20 @@ public class FlowEntry {
         this.currentQueue = getFlowQueueId();
     }
 
-    public FlowData getFlowData(){
+    public FlowData getFlowData() {
         return this.flowData;
-    } 
+    }
 
-    public boolean getIsPropagated(){
+    public boolean getIsPropagated() {
         return this.isPropagated;
     }
 
-    public void setIsPropagated(boolean isPropagated){
+    public void setIsPropagated(boolean isPropagated) {
         this.isPropagated = isPropagated;
     }
 
-    public long getFlowQueueId(){
-        if (flowData.getMinBw() > 10.0){
+    public long getFlowQueueId() {
+        if (flowData.getMinBw() > 10.0) {
             logger.error("Flow with id {} has min BW higher than 10.0!! Should be less or equal to 10.0");
             return 9; // Queue ID with 10 Mb/s
         }
@@ -50,51 +50,51 @@ public class FlowEntry {
         return queueId - 1;
     }
 
-    public boolean isOnItsQueue(){
+    public boolean isOnItsQueue() {
         return getFlowQueueId() == currentQueue;
     }
 
-    public boolean isQueueShared(){
+    public boolean isQueueShared() {
         return (getCurrentQueue() < getFlowQueueId());
     }
 
-    public long getByteCount(){
+    public long getByteCount() {
         return this.byteCount;
     }
 
-    public void setByteCount(long packetCount){
+    public void setByteCount(long packetCount) {
         this.byteCount = packetCount;
     }
 
-    public double getCurrentThput(){
+    public double getCurrentThput() {
         return this.currentThput;
     }
 
-    public void setCurrentThput(double currThput){
+    public void setCurrentThput(double currThput) {
         this.currentThput = currThput;
     }
 
-    public double getLastThput(){
+    public double getLastThput() {
         return this.lastThput;
     }
 
-    public void setLastThput(double lastThput){
+    public void setLastThput(double lastThput) {
         this.lastThput = lastThput;
     }
 
-    public Match getMatch(){
+    public Match getMatch() {
         return this.match;
     }
 
-    public void setMatch(Match match){
+    public void setMatch(Match match) {
         this.match = match;
     }
 
-    public double getTrackedBW(){
+    public double getTrackedBW() {
         return this.trackedBW;
     }
 
-    public void setTrackedBW(double trackedBW){
+    public void setTrackedBW(double trackedBW) {
         this.trackedBW = trackedBW;
     }
 
@@ -120,5 +120,13 @@ public class FlowEntry {
 
     public long getCurrentQueue() {
         return currentQueue;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+                "FlowEntry: flow data: %s, isDecreasing: %b, isGrowing: %b, currentQueueId: %d, isOnItsQueue: %b, isQueueShared: %b, currentQueueMaxBw: %f",
+                this.flowData.toString(), this.isDecreasing, this.isGrowing, this.currentQueue, this.isOnItsQueue(),
+                this.isQueueShared(), this.getCurrentQueue() + 1.0);
     }
 }

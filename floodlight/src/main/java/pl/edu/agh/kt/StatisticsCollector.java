@@ -56,7 +56,8 @@ public class StatisticsCollector {
 						if (flow == null) {
 							continue;
 						}
-
+						
+						logger.info("--------------------------");
 						logger.info("\t SDN_PROJ: flowId: {}", fse.getCookie().getValue());
 						logger.info("\t SDN_PROJ: byteCount: {}", fse.getByteCount().getValue());
 						long byteDiff = fse.getByteCount().getValue() - flow.getByteCount();
@@ -67,11 +68,11 @@ public class StatisticsCollector {
 						flow.setByteCount(fse.getByteCount().getValue());
 						logger.info("\t SDN_PROJ: lastThput: {} [Mb/s]", flow.getLastThput());
 						logger.info("\t SDN_PROJ: currentThput: {} [Mb/s]", flow.getCurrentThput());
-						logger.info("\t SDN_PROJ: trackedBW: {}", flow.getTrackedBW());
 						double diff = flow.getLastThput() - flow.getCurrentThput();
 						flow.setIsDecreasing(diff > 0.1);
 						flow.setIsGrowing(diff < -0.1 || Math.abs(flow.getCurrentThput() - (flow.getCurrentQueue()+1.0)) < 0.1);
 						flow.setTrackedBW(Math.ceil(flow.getCurrentThput()));
+						logger.info("\t SDN_PROJ: trackedBW: {}", flow.getTrackedBW());
 					}
 
 					FlowManager.manageFlows();
